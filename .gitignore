@@ -1,0 +1,57 @@
+# データディレクトリ（ユーザーデータ）
+data/
+
+# Claude Code設定
+.claude/
+
+# Pythonキャッシュ
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 仮想環境
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# テスト用ディレクトリ
+test-organize*/
+test-files*/
+temp-*/
+
+# ログファイル
+*.log
+
+# ビルド成果物
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# 環境設定ファイル（ユーザー固有）
+.env
+.env.local
