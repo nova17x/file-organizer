@@ -1,5 +1,9 @@
 # File Organizer - ファイル整理ツール
 
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Code Style](https://img.shields.io/badge/code%20style-professional-brightgreen.svg)]()
+
 フル機能のファイル整理アプリケーション。散らかったファイルを自動的に整理し、管理しやすくします。
 
 ## 特徴
