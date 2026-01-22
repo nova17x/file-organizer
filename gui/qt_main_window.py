@@ -43,8 +43,10 @@ class QtMainWindow(QMainWindow):
         self.current_rules: Optional[Dict] = None
         self.current_actions = []
 
-        # ワーカー参照
+        # ワーカーとダイアログの参照
         self.current_worker = None
+        self.current_progress_dialog = None
+        self.cancel_timer = None
 
         # UIの作成
         self._create_menu()
@@ -328,7 +330,7 @@ class QtMainWindow(QMainWindow):
             return
 
         # 進捗ダイアログを表示（キャンセル可能）
-        progress_dialog = IndeterminateProgressDialog(
+        self.current_progress_dialog = IndeterminateProgressDialog(
             self,
             title="プレビュー生成中",
             message="整理内容を分析しています...",
@@ -349,31 +351,39 @@ class QtMainWindow(QMainWindow):
         )
 
         self.current_worker.finished.connect(
-            lambda actions: self._show_preview_dialog(actions, progress_dialog)
+            lambda actions: self._show_preview_dialog(actions, self.current_progress_dialog)
         )
         self.current_worker.error.connect(
-            lambda error: self._handle_worker_error(error, progress_dialog)
+            lambda error: self._handle_worker_error(error, self.current_progress_dialog)
         )
 
         # キャンセルボタンとワーカーを接続
         def check_cancel():
-            if progress_dialog.is_cancelled:
-                self.current_worker.cancel()
-                self.current_worker.quit()
-                self.current_worker.wait()
-                progress_dialog.close()
+            if self.current_progress_dialog and self.current_progress_dialog.is_cancelled:
+                if self.current_worker:
+                    self.current_worker.cancel()
+                    self.current_worker.quit()
+                    self.current_worker.wait()
+                if self.current_progress_dialog:
+                    self.current_progress_dialog.close()
+                if self.cancel_timer:
+                    self.cancel_timer.stop()
                 self.update_status("プレビュー生成をキャンセルしました")
 
         # 定期的にキャンセルチェック
-        cancel_timer = QTimer(self)
-        cancel_timer.timeout.connect(check_cancel)
-        cancel_timer.start(100)  # 100msごとにチェック
+        self.cancel_timer = QTimer(self)
+        self.cancel_timer.timeout.connect(check_cancel)
+        self.cancel_timer.start(100)  # 100msごとにチェック
 
         # ワーカー終了時にタイマー停止
-        self.current_worker.finished.connect(cancel_timer.stop)
-        self.current_worker.error.connect(cancel_timer.stop)
+        def cleanup():
+            if self.cancel_timer:
+                self.cancel_timer.stop()
 
-        progress_dialog.show()
+        self.current_worker.finished.connect(cleanup)
+        self.current_worker.error.connect(cleanup)
+
+        self.current_progress_dialog.show()
         self.current_worker.start()
 
     def _show_preview_dialog(self, actions, progress_dialog) -> None:
@@ -426,19 +436,19 @@ class QtMainWindow(QMainWindow):
 
         # バックアップ作成
         if self.backup_check.isChecked():
-            progress_dialog = IndeterminateProgressDialog(
+            self.current_progress_dialog = IndeterminateProgressDialog(
                 self,
                 title="バックアップ作成中",
                 message="整理前のバックアップを作成しています..."
             )
-            progress_dialog.show()
+            self.current_progress_dialog.show()
 
             self.current_worker = BackupWorker(self.backup_manager, source_dir)
             self.current_worker.finished.connect(
-                lambda backup_id: self._after_backup(backup_id, progress_dialog)
+                lambda backup_id: self._after_backup(backup_id, self.current_progress_dialog)
             )
             self.current_worker.error.connect(
-                lambda error: self._handle_worker_error(error, progress_dialog)
+                lambda error: self._handle_worker_error(error, self.current_progress_dialog)
             )
             self.current_worker.start()
         else:
@@ -476,12 +486,12 @@ class QtMainWindow(QMainWindow):
     def _execute_with_actions(self, actions) -> None:
         """アクションを実行"""
         # 進捗ダイアログを表示
-        progress_dialog = ProgressDialog(
+        self.current_progress_dialog = ProgressDialog(
             self,
             title="整理実行中",
             total_items=len(actions)
         )
-        progress_dialog.show()
+        self.current_progress_dialog.show()
 
         # ワーカーで実行
         self.current_worker = ExecuteWorker(
@@ -491,13 +501,13 @@ class QtMainWindow(QMainWindow):
         )
 
         self.current_worker.progress.connect(
-            lambda current, total, message: progress_dialog.update_progress(current, message)
+            lambda current, total, message: self.current_progress_dialog.update_progress(current, message)
         )
         self.current_worker.finished.connect(
-            lambda result: self._after_execute(result, progress_dialog)
+            lambda result: self._after_execute(result, self.current_progress_dialog)
         )
         self.current_worker.error.connect(
-            lambda error: self._handle_worker_error(error, progress_dialog)
+            lambda error: self._handle_worker_error(error, self.current_progress_dialog)
         )
 
         self.current_worker.start()
@@ -541,20 +551,20 @@ class QtMainWindow(QMainWindow):
             return
 
         # 進捗ダイアログを表示
-        progress_dialog = IndeterminateProgressDialog(
+        self.current_progress_dialog = IndeterminateProgressDialog(
             self,
             title="元に戻し中",
             message="操作を元に戻しています..."
         )
-        progress_dialog.show()
+        self.current_progress_dialog.show()
 
         # ワーカーで実行
         self.current_worker = UndoWorker(self.organizer, log_file)
         self.current_worker.finished.connect(
-            lambda success: self._after_undo(success, progress_dialog)
+            lambda success: self._after_undo(success, self.current_progress_dialog)
         )
         self.current_worker.error.connect(
-            lambda error: self._handle_worker_error(error, progress_dialog)
+            lambda error: self._handle_worker_error(error, self.current_progress_dialog)
         )
         self.current_worker.start()
 
