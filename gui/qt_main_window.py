@@ -477,7 +477,9 @@ class QtMainWindow(QMainWindow):
 
     def _after_backup(self, backup_id: str, progress_dialog) -> None:
         """バックアップ後の処理"""
-        progress_dialog.close()
+        if progress_dialog:
+            progress_dialog.close()
+            progress_dialog.deleteLater()
         if backup_id:
             self.update_status(f"バックアップを作成しました: {backup_id}")
         self._execute_organization_worker()
@@ -535,15 +537,20 @@ class QtMainWindow(QMainWindow):
 
     def _after_execute(self, result, progress_dialog) -> None:
         """実行後の処理"""
-        progress_dialog.complete("完了しました")
+        if progress_dialog:
+            progress_dialog.complete("完了しました")
+            # 完了メッセージを表示してから閉じる
+            QMessageBox.information(
+                self,
+                "完了",
+                f"整理が完了しました\n\n"
+                f"成功: {result['successful']}件\n"
+                f"失敗: {result['failed']}件\n"
+                f"スキップ: {result['skipped']}件"
+            )
+            progress_dialog.close()
+            progress_dialog.deleteLater()
 
-        # 完了メッセージ
-        success_msg = f"整理が完了しました\n\n"
-        success_msg += f"成功: {result['successful']}件\n"
-        success_msg += f"失敗: {result['failed']}件\n"
-        success_msg += f"スキップ: {result['skipped']}件"
-
-        QMessageBox.information(self, "完了", success_msg)
         self.update_status("整理が完了しました")
 
         # アクションをクリア
@@ -591,7 +598,9 @@ class QtMainWindow(QMainWindow):
 
     def _after_undo(self, success: bool, progress_dialog) -> None:
         """元に戻し後の処理"""
-        progress_dialog.close()
+        if progress_dialog:
+            progress_dialog.close()
+            progress_dialog.deleteLater()
 
         if success:
             QMessageBox.information(self, "完了", "操作を元に戻しました")
@@ -690,6 +699,7 @@ Version 2.0.0 (PyQt6)
         """ワーカーエラーの処理"""
         if progress_dialog:
             progress_dialog.close()
+            progress_dialog.deleteLater()
         QMessageBox.critical(self, "エラー", f"エラーが発生しました:\n{error}")
 
     def _handle_worker_error_with_cleanup(self, error: str) -> None:

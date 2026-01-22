@@ -245,11 +245,57 @@ class FileOrganizer:
             self.logger.save_log(operation_name="Undo Operation")
 
             print(f"元に戻し完了: {successful}/{total} 件")
+
+            # 空のディレクトリを削除
+            # 整理時に作成されたディレクトリを取得
+            created_dirs = set()
+            for action in undo_actions:
+                if action["type"] == "move":
+                    # 移動元のディレクトリ（整理先）
+                    source_dir = os.path.dirname(action["source"])
+                    created_dirs.add(source_dir)
+
+            # 空のディレクトリを削除
+            for dir_path in sorted(created_dirs, key=len, reverse=True):
+                self._remove_empty_directories(dir_path)
+
             return successful > 0
 
         except Exception as e:
             print(f"エラー: 元に戻す処理中にエラーが発生しました: {e}")
             return False
+
+    def _remove_empty_directories(self, start_path: str) -> None:
+        """
+        空のディレクトリを再帰的に削除
+
+        Args:
+            start_path: 開始ディレクトリのパス
+        """
+        try:
+            # ディレクトリが存在するか確認
+            if not os.path.exists(start_path) or not os.path.isdir(start_path):
+                return
+
+            # ディレクトリが空かチェック
+            while os.path.exists(start_path) and os.path.isdir(start_path):
+                try:
+                    # サブディレクトリやファイルがあるかチェック
+                    if not os.listdir(start_path):
+                        # 空なら削除
+                        os.rmdir(start_path)
+                        print(f"空のディレクトリを削除: {start_path}")
+                        # 親ディレクトリも空かチェック
+                        start_path = os.path.dirname(start_path)
+                    else:
+                        # 空でない場合は終了
+                        break
+                except OSError:
+                    # 削除できない場合は終了
+                    break
+
+        except Exception as e:
+            print(f"警告: ディレクトリ削除中にエラーが発生しました: {e}")
 
     def create_directory_structure(self, base_dir: str, categories: List[str]) -> None:
         """
