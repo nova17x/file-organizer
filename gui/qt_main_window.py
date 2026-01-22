@@ -360,11 +360,25 @@ class QtMainWindow(QMainWindow):
         # キャンセルボタンとワーカーを接続
         def check_cancel():
             if self.current_progress_dialog and self.current_progress_dialog.is_cancelled:
+                # タイマーを即座に停止
+                if self.cancel_timer:
+                    self.cancel_timer.stop()
+                    self.cancel_timer.deleteLater()
+                    self.cancel_timer = None
+
+                # ワーカーをキャンセル
                 if self.current_worker:
                     self.current_worker.cancel()
                     self.current_worker.quit()
                     self.current_worker.wait()
-                self._cleanup_preview_resources()
+                    self.current_worker = None
+
+                # ダイアログを閉じる
+                if self.current_progress_dialog:
+                    self.current_progress_dialog.close()
+                    self.current_progress_dialog.deleteLater()
+                    self.current_progress_dialog = None
+
                 self.update_status("プレビュー生成をキャンセルしました")
 
         # 定期的にキャンセルチェック
@@ -384,11 +398,13 @@ class QtMainWindow(QMainWindow):
         # タイマー停止
         if self.cancel_timer:
             self.cancel_timer.stop()
+            self.cancel_timer.deleteLater()
             self.cancel_timer = None
 
         # 進捗ダイアログを閉じる
         if self.current_progress_dialog:
             self.current_progress_dialog.close()
+            self.current_progress_dialog.deleteLater()
             self.current_progress_dialog = None
 
     def _show_preview_dialog(self, actions) -> None:
