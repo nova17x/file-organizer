@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton,
     QTextEdit, QGroupBox, QFileDialog, QMessageBox, QButtonGroup
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from typing import Optional, Dict
 
 # コアモジュール
