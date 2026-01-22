@@ -20,6 +20,9 @@ from .qt_progress_dialog import ProgressDialog, IndeterminateProgressDialog
 from .qt_preview_dialog import PreviewDialog
 from .qt_rule_editor import RuleEditorDialog
 from .qt_workers import OrganizeWorker, ExecuteWorker, UndoWorker, BackupWorker
+from .qt_log_viewer import LogViewerDialog
+from .qt_backup_manager import BackupManagerDialog
+from .qt_duplicate_detector import DuplicateDetectorDialog
 from .themes import ThemeManager, ThemeType
 
 
@@ -650,15 +653,18 @@ class QtMainWindow(QMainWindow):
 
     def _detect_duplicates(self) -> None:
         """重複ファイルを検出"""
-        QMessageBox.information(self, "情報", "重複ファイル検出機能は実装中です")
+        dialog = DuplicateDetectorDialog(self, self.duplicate_detector)
+        dialog.exec_centered()
 
     def _manage_backups(self) -> None:
         """バックアップ管理"""
-        QMessageBox.information(self, "情報", "バックアップ管理機能は実装中です")
+        dialog = BackupManagerDialog(self, self.backup_manager)
+        dialog.exec_centered()
 
     def _view_logs(self) -> None:
         """ログビューア"""
-        QMessageBox.information(self, "情報", "ログビューア機能は実装中です")
+        dialog = LogViewerDialog(self, self.organizer.logger)
+        dialog.exec_centered()
 
     def _show_help(self) -> None:
         """使い方を表示"""
