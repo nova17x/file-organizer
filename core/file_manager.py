@@ -43,13 +43,17 @@ class FileOrganizer:
 
         actions = []
 
+        # ルールからカスタム除外パターンを取得
+        custom_exclude_patterns = rules.get('exclude_patterns', [])
+
         try:
             # ソースディレクトリ内のすべてのファイルを取得
             for root, dirs, files in os.walk(source_dir):
-                # 既に整理されたディレクトリはスキップ
-                if root != source_dir and self._is_organized_directory(root):
-                    dirs.clear()  # サブディレクトリの探索を停止
-                    continue
+                # 除外すべきディレクトリをフィルタリング
+                if root != source_dir:
+                    if self._should_exclude_directory(root, custom_exclude_patterns):
+                        dirs.clear()  # サブディレクトリの探索を停止
+                        continue
 
                 for filename in files:
                     source_path = os.path.join(root, filename)
@@ -296,24 +300,65 @@ class FileOrganizer:
             "by_status": by_status
         }
 
-    def _is_organized_directory(self, path: str) -> bool:
+    def _should_exclude_directory(self, path: str, custom_patterns: List[str] = None) -> bool:
         """
-        ディレクトリが整理済みかどうかを判定
+        ディレクトリを除外すべきかどうかを判定
 
         Args:
             path: ディレクトリのパス
+            custom_patterns: カスタム除外パターンのリスト
 
         Returns:
-            整理済みの場合True
+            除外すべき場合True
         """
-        # カテゴリ名のパターンに一致するかチェック
         dirname = os.path.basename(path)
+
+        # デフォルトの除外パターン
+        # 1. 整理カテゴリディレクトリ（このツールが作成するディレクトリ）
         organized_patterns = [
             "Images", "Videos", "Documents", "Audio", "Archives",
             "Code", "Others", "Small", "Medium", "Large"
         ]
 
-        return dirname in organized_patterns
+        # 2. システムおよび開発関連ディレクトリ
+        system_patterns = [
+            # バージョン管理
+            ".git", ".svn", ".hg", ".bzr",
+            # Python
+            "__pycache__", ".pytest_cache", ".mypy_cache", ".tox",
+            "venv", ".venv", "env", ".env", "virtualenv",
+            # Node.js
+            "node_modules", "bower_components",
+            # その他の開発ツール
+            ".idea", ".vscode", ".vs",
+            # システムフォルダ
+            "bin", "lib", "lib64", "include", "share",
+            # macOS
+            ".DS_Store", ".Trash", ".Spotlight-V100",
+            # Windows
+            "$RECYCLE.BIN", "System Volume Information",
+            # ビルド成果物
+            "build", "dist", "target", "out",
+            # キャッシュ
+            ".cache", "cache", "tmp", "temp",
+        ]
+
+        # 3. 隠しディレクトリ（.で始まる）
+        if dirname.startswith('.'):
+            return True
+
+        # 4. デフォルトパターンに一致するか
+        if dirname in organized_patterns or dirname in system_patterns:
+            return True
+
+        # 5. カスタムパターンに一致するか
+        if custom_patterns:
+            for pattern in custom_patterns:
+                # 完全一致または部分一致（簡易的なパターンマッチング）
+                if pattern in dirname or dirname == pattern:
+                    return True
+
+        return False
 
     def _get_unique_filename(self, file_path: str) -> str:
         """

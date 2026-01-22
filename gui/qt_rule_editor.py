@@ -81,6 +81,7 @@ class RuleEditorDialog(BaseDialog):
         self._create_date_tab()
         self._create_size_tab()
         self._create_pattern_tab()
+        self._create_exclude_tab()
 
         layout.addWidget(self.tab_widget)
 
@@ -315,6 +316,51 @@ class RuleEditorDialog(BaseDialog):
         self.patterns = {}
         self._load_default_patterns()
 
+    def _create_exclude_tab(self) -> None:
+        """除外パターンタブを作成"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        # 説明
+        info_label = QLabel(
+            "整理時にスキップするディレクトリパターンを指定します。\n"
+            "デフォルトで隠しディレクトリ（.で始まる）、システムフォルダ、\n"
+            "開発関連フォルダ（node_modules, .gitなど）は自動的にスキップされます。"
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: gray;")
+        layout.addWidget(info_label)
+
+        # 除外パターンリスト
+        self.exclude_listbox = QListWidget()
+        self.exclude_listbox.setMinimumHeight(350)
+        layout.addWidget(self.exclude_listbox)
+
+        # ボタン
+        button_layout = QHBoxLayout()
+        add_button = QPushButton("追加")
+        add_button.clicked.connect(self._add_exclude_pattern)
+        button_layout.addWidget(add_button)
+
+        edit_button = QPushButton("編集")
+        edit_button.clicked.connect(self._edit_exclude_pattern)
+        button_layout.addWidget(edit_button)
+
+        delete_button = QPushButton("削除")
+        delete_button.clicked.connect(self._delete_exclude_pattern)
+        button_layout.addWidget(delete_button)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        tab.setLayout(layout)
+        self.tab_widget.addTab(tab, "除外パターン")
+
+        # 除外パターンリスト
+        self.exclude_patterns = []
+
     def _load_default_categories(self) -> None:
         """デフォルトカテゴリを読み込み"""
         default_categories = {
@@ -434,6 +480,54 @@ class RuleEditorDialog(BaseDialog):
         del self.patterns[category_name]
         self.pattern_listbox.takeItem(current_item)
 
+    def _add_exclude_pattern(self) -> None:
+        """除外パターンを追加"""
+        from PyQt6.QtWidgets import QInputDialog
+        pattern, ok = QInputDialog.getText(
+            self,
+            "除外パターン追加",
+            "除外するディレクトリ名またはパターンを入力してください:"
+        )
+
+        if ok and pattern:
+            pattern = pattern.strip()
+            if pattern and pattern not in self.exclude_patterns:
+                self.exclude_patterns.append(pattern)
+                self.exclude_listbox.addItem(pattern)
+
+    def _edit_exclude_pattern(self) -> None:
+        """除外パターンを編集"""
+        current_row = self.exclude_listbox.currentRow()
+        if current_row < 0:
+            QMessageBox.warning(self, "警告", "編集するパターンを選択してください")
+            return
+
+        old_pattern = self.exclude_patterns[current_row]
+
+        from PyQt6.QtWidgets import QInputDialog
+        pattern, ok = QInputDialog.getText(
+            self,
+            "除外パターン編集",
+            "除外パターン:",
+            text=old_pattern
+        )
+
+        if ok and pattern:
+            pattern = pattern.strip()
+            if pattern:
+                self.exclude_patterns[current_row] = pattern
+                self.exclude_listbox.item(current_row).setText(pattern)
+
+    def _delete_exclude_pattern(self) -> None:
+        """除外パターンを削除"""
+        current_row = self.exclude_listbox.currentRow()
+        if current_row < 0:
+            QMessageBox.warning(self, "警告", "削除するパターンを選択してください")
+            return
+
+        del self.exclude_patterns[current_row]
+        self.exclude_listbox.takeItem(current_row)
+
     def _load_template(self) -> None:
         """テンプレートを読み込み"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -505,6 +599,13 @@ class RuleEditorDialog(BaseDialog):
                 for category, pattern in self.patterns.items():
                     self.pattern_listbox.addItem(f"{category}: {pattern}")
 
+        # 除外パターンを読み込み
+        if "exclude_patterns" in rules:
+            self.exclude_patterns = rules["exclude_patterns"]
+            self.exclude_listbox.clear()
+            for pattern in self.exclude_patterns:
+                self.exclude_listbox.addItem(pattern)
+
     def _on_save(self) -> None:
         """保存ボタンが押された時の処理"""
         # ルールを構築
@@ -557,6 +658,9 @@ class RuleEditorDialog(BaseDialog):
                 "enabled": True,
                 "patterns": self.patterns
             })
+
+        # 除外パターン
+        rules["exclude_patterns"] = self.exclude_patterns
 
         self.result_rules = rules
         self.accept()

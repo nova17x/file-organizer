@@ -209,6 +209,10 @@ class RuleEngine:
             "version": "1.0",
             "description": "デフォルトのファイル整理ルール",
             "priority": ["pattern", "extension", "date"],
+            "exclude_patterns": [
+                # ユーザーがカスタマイズ可能な除外パターン
+                # 例: "backup", "important", "do_not_organize"
+            ],
             "rules": [
                 {
                     "type": "extension",
