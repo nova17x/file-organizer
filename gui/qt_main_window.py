@@ -351,10 +351,10 @@ class QtMainWindow(QMainWindow):
         )
 
         self.current_worker.finished.connect(
-            lambda actions: self._show_preview_dialog(actions, self.current_progress_dialog)
+            lambda actions: self._show_preview_dialog(actions)
         )
         self.current_worker.error.connect(
-            lambda error: self._handle_worker_error(error, self.current_progress_dialog)
+            lambda error: self._handle_worker_error_with_cleanup(error)
         )
 
         # キャンセルボタンとワーカーを接続
@@ -364,10 +364,7 @@ class QtMainWindow(QMainWindow):
                     self.current_worker.cancel()
                     self.current_worker.quit()
                     self.current_worker.wait()
-                if self.current_progress_dialog:
-                    self.current_progress_dialog.close()
-                if self.cancel_timer:
-                    self.cancel_timer.stop()
+                self._cleanup_preview_resources()
                 self.update_status("プレビュー生成をキャンセルしました")
 
         # 定期的にキャンセルチェック
@@ -375,20 +372,28 @@ class QtMainWindow(QMainWindow):
         self.cancel_timer.timeout.connect(check_cancel)
         self.cancel_timer.start(100)  # 100msごとにチェック
 
-        # ワーカー終了時にタイマー停止
-        def cleanup():
-            if self.cancel_timer:
-                self.cancel_timer.stop()
-
-        self.current_worker.finished.connect(cleanup)
-        self.current_worker.error.connect(cleanup)
+        # ワーカー終了時にクリーンアップ
+        self.current_worker.finished.connect(self._cleanup_preview_resources)
+        self.current_worker.error.connect(self._cleanup_preview_resources)
 
         self.current_progress_dialog.show()
         self.current_worker.start()
 
-    def _show_preview_dialog(self, actions, progress_dialog) -> None:
+    def _cleanup_preview_resources(self) -> None:
+        """プレビュー処理のリソースをクリーンアップ"""
+        # タイマー停止
+        if self.cancel_timer:
+            self.cancel_timer.stop()
+            self.cancel_timer = None
+
+        # 進捗ダイアログを閉じる
+        if self.current_progress_dialog:
+            self.current_progress_dialog.close()
+            self.current_progress_dialog = None
+
+    def _show_preview_dialog(self, actions) -> None:
         """プレビューダイアログを表示"""
-        progress_dialog.close()
+        # クリーンアップは finished シグナルで既に実行されている
 
         if not actions:
             QMessageBox.information(self, "情報", "整理するファイルがありません")
@@ -669,6 +674,10 @@ Version 2.0.0 (PyQt6)
         """ワーカーエラーの処理"""
         if progress_dialog:
             progress_dialog.close()
+        QMessageBox.critical(self, "エラー", f"エラーが発生しました:\n{error}")
+
+    def _handle_worker_error_with_cleanup(self, error: str) -> None:
+        """ワーカーエラーの処理（クリーンアップは既にシグナルで実行済み）"""
         QMessageBox.critical(self, "エラー", f"エラーが発生しました:\n{error}")
 
     def update_status(self, message: str) -> None:
