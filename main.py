@@ -7,7 +7,8 @@ File Organizer - ファイル整理ツール
 - 重複ファイル検出
 - バックアップと元に戻す機能
 - フォルダ監視による自動整理
-- GUI操作
+- モダンなPyQt6 GUI
+- ダーク/ライトテーマ切り替え
 """
 
 import sys
@@ -16,7 +17,8 @@ import os
 # モジュールのパスを追加
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gui import MainWindow
+from PyQt6.QtWidgets import QApplication
+from gui import MainWindow, ThemeManager, ThemeType
 from config import settings
 
 
@@ -26,11 +28,18 @@ def main():
         # 必要なディレクトリの確認
         settings.ensure_directories()
 
+        # QApplicationを作成
+        app = QApplication(sys.argv)
+
+        # デフォルトテーマを適用（ダークテーマ）
+        ThemeManager.apply_theme(app, ThemeType.DARK)
+
         # メインウィンドウを作成
-        app = MainWindow()
+        window = MainWindow()
+        window.show()
 
         # イベントループを開始
-        app.mainloop()
+        sys.exit(app.exec())
 
     except KeyboardInterrupt:
         print("\n\nアプリケーションを終了します...")

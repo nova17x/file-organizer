@@ -1,8 +1,18 @@
 """
 GUIモジュール
-Tkinterベースのユーザーインターフェースを提供
+PyQt6ベースのモダンなユーザーインターフェースを提供
 """
 
-from .main_window import MainWindow
+# PyQt6版のGUI（新バージョン）
+from .qt_main_window import QtMainWindow
+from .themes import ThemeManager, ThemeType
 
-__all__ = ['MainWindow']
+# メインウィンドウのエイリアス（PyQt6版を使用）
+MainWindow = QtMainWindow
+
+__all__ = [
+    'MainWindow',
+    'QtMainWindow',
+    'ThemeManager',
+    'ThemeType'
+]
