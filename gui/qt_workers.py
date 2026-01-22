@@ -30,6 +30,11 @@ class OrganizeWorker(QThread):
         self.output_dir = output_dir
         self.preview_mode = preview_mode
         self.operation_mode = operation_mode
+        self._is_cancelled = False
+
+    def cancel(self):
+        """処理をキャンセル"""
+        self._is_cancelled = True
 
     def run(self):
         """スレッド実行"""
@@ -41,9 +46,11 @@ class OrganizeWorker(QThread):
                 preview_mode=self.preview_mode,
                 operation_mode=self.operation_mode
             )
-            self.finished.emit(actions)
+            if not self._is_cancelled:
+                self.finished.emit(actions)
         except Exception as e:
-            self.error.emit(str(e))
+            if not self._is_cancelled:
+                self.error.emit(str(e))
 
 
 class ExecuteWorker(QThread):

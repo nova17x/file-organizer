@@ -57,7 +57,7 @@ class TestWindow(QMainWindow):
         """新規ルールを作成"""
         dialog = RuleEditorDialog(self)
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result_rules:
                 # 結果を表示
                 rules_json = json.dumps(dialog.result_rules, indent=2, ensure_ascii=False)
@@ -114,7 +114,7 @@ class TestWindow(QMainWindow):
 
         dialog = RuleEditorDialog(self, sample_rule)
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result_rules:
                 # 結果を表示
                 rules_json = json.dumps(dialog.result_rules, indent=2, ensure_ascii=False)

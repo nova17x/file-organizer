@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton,
     QTextEdit, QGroupBox, QFileDialog, QMessageBox, QButtonGroup
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from typing import Optional, Dict
 
 # コアモジュール
@@ -287,7 +287,7 @@ class QtMainWindow(QMainWindow):
         """ルールを編集"""
         dialog = RuleEditorDialog(self, self.current_rules)
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result_rules:
                 self.current_rules = dialog.result_rules
                 self._update_rule_display()
@@ -327,13 +327,13 @@ class QtMainWindow(QMainWindow):
             QMessageBox.critical(self, "エラー", "ルールが設定されていません")
             return
 
-        # 進捗ダイアログを表示
+        # 進捗ダイアログを表示（キャンセル可能）
         progress_dialog = IndeterminateProgressDialog(
             self,
             title="プレビュー生成中",
-            message="整理内容を分析しています..."
+            message="整理内容を分析しています...",
+            cancelable=True
         )
-        progress_dialog.show()
 
         # ワーカーで実行
         output_dir = self.output_dir_edit.text() or source_dir
@@ -355,6 +355,25 @@ class QtMainWindow(QMainWindow):
             lambda error: self._handle_worker_error(error, progress_dialog)
         )
 
+        # キャンセルボタンとワーカーを接続
+        def check_cancel():
+            if progress_dialog.is_cancelled:
+                self.current_worker.cancel()
+                self.current_worker.quit()
+                self.current_worker.wait()
+                progress_dialog.close()
+                self.update_status("プレビュー生成をキャンセルしました")
+
+        # 定期的にキャンセルチェック
+        cancel_timer = QTimer(self)
+        cancel_timer.timeout.connect(check_cancel)
+        cancel_timer.start(100)  # 100msごとにチェック
+
+        # ワーカー終了時にタイマー停止
+        self.current_worker.finished.connect(cancel_timer.stop)
+        self.current_worker.error.connect(cancel_timer.stop)
+
+        progress_dialog.show()
         self.current_worker.start()
 
     def _show_preview_dialog(self, actions, progress_dialog) -> None:
@@ -368,7 +387,7 @@ class QtMainWindow(QMainWindow):
         # プレビューダイアログを表示
         preview_dialog = PreviewDialog(self, actions)
 
-        if preview_dialog.exec():
+        if preview_dialog.exec_centered():
             confirmed_actions = preview_dialog.get_confirmed_actions()
             if confirmed_actions:
                 self.current_actions = confirmed_actions

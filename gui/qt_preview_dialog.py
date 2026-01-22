@@ -286,6 +286,3 @@ class PreviewDialog(BaseDialog):
             size_bytes /= 1024.0
         return f"{size_bytes:.1f} PB"
 
-    def exec(self) -> int:
-        """ダイアログを実行"""
-        return self.exec_centered()

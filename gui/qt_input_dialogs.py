@@ -113,9 +113,6 @@ class CategoryDialog(BaseDialog):
         self.result = (category, extensions)
         self.accept()
 
-    def exec(self) -> int:
-        """ダイアログを実行"""
-        return self.exec_centered()
 
 
 class PatternDialog(BaseDialog):
@@ -214,6 +211,3 @@ class PatternDialog(BaseDialog):
         self.result = (category, pattern)
         self.accept()
 
-    def exec(self) -> int:
-        """ダイアログを実行"""
-        return self.exec_centered()

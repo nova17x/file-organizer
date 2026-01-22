@@ -60,7 +60,7 @@ class TestWindow(QMainWindow):
         """プレビューダイアログを表示"""
         dialog = PreviewDialog(self, actions)
 
-        if dialog.exec():
+        if dialog.exec_centered():
             confirmed_actions = dialog.get_confirmed_actions()
             if confirmed_actions:
                 QMessageBox.information(

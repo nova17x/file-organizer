@@ -566,6 +566,3 @@ class RuleEditorDialog(BaseDialog):
         self.result_rules = None
         self.reject()
 
-    def exec(self) -> int:
-        """ダイアログを実行"""
-        return self.exec_centered()

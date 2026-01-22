@@ -63,7 +63,7 @@ class TestWindow(QMainWindow):
             title="カテゴリの追加"
         )
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result:
                 category, extensions = dialog.result
                 QMessageBox.information(
@@ -81,7 +81,7 @@ class TestWindow(QMainWindow):
             extensions=[".jpg", ".png", ".gif"]
         )
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result:
                 category, extensions = dialog.result
                 QMessageBox.information(
@@ -97,7 +97,7 @@ class TestWindow(QMainWindow):
             title="パターンの追加"
         )
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result:
                 category, pattern = dialog.result
                 QMessageBox.information(
@@ -115,7 +115,7 @@ class TestWindow(QMainWindow):
             pattern="^screenshot[_-].*"
         )
 
-        if dialog.exec():
+        if dialog.exec_centered():
             if dialog.result:
                 category, pattern = dialog.result
                 QMessageBox.information(

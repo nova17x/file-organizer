@@ -189,19 +189,27 @@ class IndeterminateProgressDialog(BaseDialog):
         self,
         parent: Optional[QWidget] = None,
         title: str = "処理中",
-        message: str = "処理を実行中..."
+        message: str = "処理を実行中...",
+        cancelable: bool = False
     ):
         """
         Args:
             parent: 親ウィジェット
             title: ダイアログのタイトル
             message: 表示するメッセージ
+            cancelable: キャンセル可能かどうか
         """
         super().__init__(parent, modal=True)
 
+        self.is_cancelled = False
+        self.cancelable = cancelable
+
         # ウィンドウの設定
         self.setWindowTitle(title)
-        self.setFixedSize(400, 150)
+        if cancelable:
+            self.setFixedSize(400, 200)
+        else:
+            self.setFixedSize(400, 150)
 
         # UIの作成
         self._create_widgets(message)
@@ -231,7 +239,23 @@ class IndeterminateProgressDialog(BaseDialog):
         self.progress_bar.setMinimumWidth(300)
         layout.addWidget(self.progress_bar)
 
+        # キャンセルボタン（オプション）
+        if self.cancelable:
+            self.cancel_button = QPushButton("キャンセル")
+            self.cancel_button.clicked.connect(self._on_cancel)
+            self.cancel_button.setMinimumHeight(30)
+            layout.addWidget(self.cancel_button, alignment=Qt.AlignmentFlag.AlignCenter)
+
         self.setLayout(layout)
+
+    def _on_cancel(self) -> None:
+        """キャンセルボタンが押された時の処理"""
+        self.is_cancelled = True
+        if hasattr(self, 'cancel_button'):
+            self.cancel_button.setEnabled(False)
+            self.cancel_button.setText("キャンセル中...")
+        self.message_label.setText("キャンセル中...")
+        self.repaint()
 
     def set_message(self, message: str) -> None:
         """
@@ -245,5 +269,11 @@ class IndeterminateProgressDialog(BaseDialog):
 
     def closeEvent(self, event) -> None:
         """ウィンドウを閉じようとした時の処理"""
-        # 不定進捗ダイアログは閉じるボタンを無効化
-        event.ignore()
+        if self.cancelable and not self.is_cancelled:
+            self._on_cancel()
+            event.ignore()
+        elif not self.cancelable:
+            # キャンセル不可の場合は閉じるボタンを無効化
+            event.ignore()
+        else:
+            event.accept()
