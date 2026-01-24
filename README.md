@@ -43,3 +43,8 @@ MIT License
 
 - **[@nova17x](https://github.com/nova17x)** - プロジェクト企画・開発
 - **Claude (Anthropic)** - AI開発パートナー
+
+## 詳細情報
+
+リポジトリの詳細はこちらから確認することができます。
+https://zread.ai/nova17x/file-organizer
